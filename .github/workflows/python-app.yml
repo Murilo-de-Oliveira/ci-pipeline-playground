@@ -44,27 +44,38 @@ jobs:
       postgres:
         image: postgres:15
         env:
+          POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
+    env:
+      POSTGRES_HOST: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/postgres
     steps:
       - name: Checkout
         uses: actions/checkout@v5
 
       - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Wait for PostgreSQL to be ready
         run: |
-          pip install -r requirements.txt
+          until pg_isready -h $POSTGRES_HOST -p $POSTGRES_PORT; do
+            echo "Waiting for PostgreSQL..."
+            sleep 2
+          done
 
       - name: Test PostgreSQL connection
-        env:
-          POSTGRES_HOST: localhost   # ou 'postgres' se for container job
-          POSTGRES_PORT: 5432
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: testdb
         run: |
           echo "Tentando conectar no PostgreSQL..."
           PGPASSWORD=$POSTGRES_PASSWORD psql \
@@ -74,12 +85,6 @@ jobs:
             -c "\l"
 
       - name: Test create table
-        env:
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: 5432
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpassword
-          POSTGRES_DB: testdb
         run: |
           PGPASSWORD=$POSTGRES_PASSWORD psql -h $POSTGRES_HOST -U $POSTGRES_USER -d $POSTGRES_DB <<EOF
           CREATE TABLE IF NOT EXISTS test_table(id SERIAL PRIMARY KEY, name TEXT);
@@ -88,8 +93,4 @@ jobs:
           EOF
 
       - name: Run tests
-        env:
-          POSTGRES_HOST: postgres
-          POSTGRES_PORT: 5432
-          DATABASE_URL: postgres://postgres:postgres@$POSTGRES_HOST:$POSTGRES_PORT/postgres
         run: pytest
