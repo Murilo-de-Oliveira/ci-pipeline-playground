@@ -36,4 +36,4 @@ def test_insert_and_select(db_connection):
     insert_data(db_connection, "Teste GitHub Actions")
     records = select_data(db_connection)
     assert len(records) > 0
-    assert records[0][1] == "Teste GitHub Actions"
+    assert records[0][1] == "GitHub Actions"
