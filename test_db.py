@@ -3,17 +3,19 @@ from app.db import create_connection, create_table, insert_data, select_data
 
 
 @pytest.fixture
-def db_connection():
+def db_connection():    
     conn = create_connection(
-        db_name="testdb",
-        db_user="testuser",
-        db_password="testpassword",
-        db_host="localhost",
+        db_name="postgres",
+        db_user="postgres",
+        db_password="postgres",
+        db_host="postgres",
         db_port="5432",
     )
+    if conn is None:
+        pytest.fail("Não foi possível conectar ao PostgreSQL")
     yield conn
     conn.close()
-
+    
 
 def test_connection(db_connection):
     assert db_connection is not None
